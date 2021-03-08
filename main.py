@@ -117,14 +117,14 @@ def clean_posts(posts_to_text):
 
     for post in posts_to_text:
         alert_text = f'Alert: {post["keyword"]}'
-        post["link"] = requests.get(TINY_URL_PREFIX + post["link"]).text.split('//')[1]
-        title_chars = MAX_SMS_LENGTH - len(alert_text) - len(post["link"]) - 2
+        post["short_link"] = requests.get(TINY_URL_PREFIX + post["link"]).text.split('//')[1]
+        title_chars = MAX_SMS_LENGTH - len(alert_text) - len(post["short_link"]) - 2
 
         if title_chars != len(post["title"]):
             # Title section was shortened
             post["title"] = post["title"][:title_chars - 3] + "..."
 
-        post["message"] = f'{alert_text}\n{post["title"]}\n{post["link"]}'
+        post["message"] = f'{alert_text}\n{post["title"]}\n{post["short_link"]}'
 
     return posts_to_text
 
