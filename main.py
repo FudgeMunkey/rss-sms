@@ -1,11 +1,21 @@
 import yaml
 import feedparser
 import boto3
+from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 import os
 import requests
 
 load_dotenv()
+ENVIRONMENT = os.getenv("ENVIRONMENT").lower()
+MAX_SMS_LENGTH = int(os.getenv("MAX_SMS_LENGTH"))
+
+aws_access_key_id = os.getenv("aws_access_key_id")
+aws_secret_access_key = os.getenv("aws_secret_access_key")
+aws_region_name = os.getenv("aws_region_name")
+
+if ENVIRONMENT == "aws":
+    bucket_name = "s3-rss-sms"
 
 
 def load_config():
@@ -18,12 +28,66 @@ def load_config():
     return config_data
 
 
-def load_texted():
+def load_texted_local():
     with open("texted.yml") as file:
         texted_data = yaml.load(file, Loader=yaml.FullLoader)
 
     if not texted_data:
         texted_data = {}
+
+    return texted_data
+
+
+def file_client_aws():
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key,
+        region_name=aws_region_name
+    )
+
+    return s3_client
+
+
+def load_texted_aws():
+    # Create s3 client
+    s3_client = file_client_aws()
+
+    texted_data = {}
+
+    # Check if bucket exists
+    # TODO: There's probably a better way to check this
+    bucket_exists = any(
+        [b["Name"] == bucket_name for b in s3_client.list_buckets()["Buckets"]]
+    )
+
+    if not bucket_exists:
+        try:
+            s3_client.create_bucket(
+                Bucket=bucket_name,
+                CreateBucketConfiguration={
+                    "LocationConstraint": aws_region_name,
+                }
+            )
+        except ClientError as e:
+            print("Error: Bucket didn't exist")
+            print(e)
+
+    # Get the texted file
+    try:
+        texted_file = s3_client.get_object(
+            Bucket=bucket_name,
+            Key="texted.yml",
+        )
+        file_data = texted_file["Body"].read().decode('ascii')
+        texted_data = yaml.load(
+            file_data,
+            Loader=yaml.FullLoader
+        )
+    except ClientError as e:
+        # File doesn't exist
+        print("Error: Texted file doesn't exist")
+        print(e)
 
     return texted_data
 
@@ -41,18 +105,24 @@ def stub_texted(config_data, texted_data):
 
 
 def text_posts(sms_client, posts_to_text, texted_data):
-    # TODO: Handle texting errors
-
     for post in posts_to_text:
-        text_result = sms_client.publish(
-            PhoneNumber=post["mobile"],
-            Message=post["message"],
-            Subject="RSS SMS"
-        )
+        try:
+            text_result = sms_client.publish(
+                PhoneNumber=post["mobile"],
+                Message=post["message"],
+                Subject="RSS SMS"
+            )
 
-        # Track the texted URLs
-        texted_data[post["mobile"]]["texts"] += 1
-        texted_data[post["mobile"]][post["rss_url"]].append(post["link"])
+            # Track the texted URLs
+            texted_data[post["mobile"]]["texts"] += 1
+            texted_data[post["mobile"]][post["rss_url"]].append(post["link"])
+
+            print(f'Texted {post["mobile"]} deal {post["link"]}')
+            print(text_result)
+        except ClientError as e:
+            print("Error: Failed to text deal")
+            print(post)
+            print(e)
 
 
 def check_feeds(config_data, texted_data):
@@ -90,16 +160,31 @@ def check_feeds(config_data, texted_data):
     return posts_to_text
 
 
-def update_texted(texted_data):
+def update_texted_local(texted_data):
     with open("texted.yml", "w") as file:
         yaml.dump(texted_data, file)
 
 
-def aws_client():
-    aws_access_key_id = os.getenv("aws_access_key_id")
-    aws_secret_access_key = os.getenv("aws_secret_access_key")
-    aws_region_name = os.getenv("aws_region_name")
+def update_texted_aws(texted_data):
+    # Create s3 client
+    s3_client = file_client_aws()
 
+    data = yaml.dump(texted_data).encode('ascii')
+
+    try:
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="texted.yml",
+            Body=data,
+        )
+
+        print("Updated texted file")
+    except ClientError as e:
+        print("Error: Failed to update texted file")
+        print(e)
+
+
+def sms_client_aws():
     # Create SNS client
     sns_client = boto3.client(
         "sns",
@@ -112,12 +197,12 @@ def aws_client():
 
 
 def clean_posts(posts_to_text):
-    MAX_SMS_LENGTH = int(os.getenv("MAX_SMS_LENGTH"))
     TINY_URL_PREFIX = "http://tinyurl.com/api-create.php?url="
 
     for post in posts_to_text:
         alert_text = f'Alert: {post["keyword"]}'
-        post["short_link"] = requests.get(TINY_URL_PREFIX + post["link"]).text.split('//')[1]
+        post["short_link"] = requests.get(TINY_URL_PREFIX + post["link"])
+        post["short_link"] = post["short_link"].text.split('//')[1]
         title_chars = MAX_SMS_LENGTH - len(alert_text) - len(post["short_link"]) - 2
 
         if title_chars != len(post["title"]):
@@ -134,7 +219,10 @@ if __name__ == "__main__":
     config = load_config()
 
     # Load texted
-    texted = load_texted()
+    if ENVIRONMENT == "local":
+        texted = load_texted_local()
+    elif ENVIRONMENT == "aws":
+        texted = load_texted_aws()
     stub_texted(config, texted)
 
     # Check for posts to text
@@ -144,10 +232,13 @@ if __name__ == "__main__":
     posts = clean_posts(posts)
 
     # Create sms client
-    client = aws_client()
+    client = sms_client_aws()
 
     # Text the posts
     text_posts(client, posts, texted)
 
     # Update texted file
-    update_texted(texted)
+    if ENVIRONMENT == "local":
+        update_texted_local(texted)
+    elif ENVIRONMENT == "aws":
+        update_texted_aws(texted)
