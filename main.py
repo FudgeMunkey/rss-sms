@@ -3,6 +3,9 @@ import feedparser
 import boto3
 from dotenv import load_dotenv
 import os
+import requests
+
+load_dotenv()
 
 
 def load_config():
@@ -56,13 +59,10 @@ def check_feeds(config_data, texted_data):
     posts_to_text = []
 
     for mobile in config_data:
-        print(f"Scanning for {mobile}")
         rss_urls = config_data[mobile]
 
         for rss_url in rss_urls:
             # Load the rss_feed
-            print(f"loading rss feed {rss_url}")
-
             rss_feed = feedparser.parse(rss_url)
 
             for post in rss_feed.entries:
@@ -96,8 +96,6 @@ def update_texted(texted_data):
 
 
 def aws_client():
-    load_dotenv()
-
     aws_access_key_id = os.getenv("aws_access_key_id")
     aws_secret_access_key = os.getenv("aws_secret_access_key")
     aws_region_name = os.getenv("aws_region_name")
@@ -114,17 +112,19 @@ def aws_client():
 
 
 def clean_posts(posts_to_text):
-    # TODO: Clean up/optimise the posts
+    MAX_SMS_LENGTH = int(os.getenv("MAX_SMS_LENGTH"))
+    TINY_URL_PREFIX = "http://tinyurl.com/api-create.php?url="
 
     for post in posts_to_text:
-        sms_message = f'Alert {post["keyword"]}\n{post["title"]}\n{post["link"]}'
+        alert_text = f'Alert: {post["keyword"]}'
+        post["link"] = requests.get(TINY_URL_PREFIX + post["link"]).text.split('//')[1]
+        title_chars = MAX_SMS_LENGTH - len(alert_text) - len(post["link"]) - 2
 
-        if len(sms_message) > 160:
-            # TODO: Optimisations around character length
-            print(f"Too many characters..\n{sms_message}")
-            sms_message = f'Alert {post["keyword"]}\n{post["link"]}'
+        if title_chars != len(post["title"]):
+            # Title section was shortened
+            post["title"] = post["title"][:title_chars - 3] + "..."
 
-        post["message"] = sms_message
+        post["message"] = f'{alert_text}\n{post["title"]}\n{post["link"]}'
 
     return posts_to_text
 
