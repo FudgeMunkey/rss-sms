@@ -29,14 +29,14 @@ def load_texted():
 
 
 def stub_texted(config_data, texted_data):
-    # TODO: Also stub new rss urls
     for mobile in config_data:
         if mobile not in texted_data:
             texted_data[mobile] = {
                 'texts': 0
             }
 
-            for rss_feed in config_data[mobile]:
+        for rss_feed in config_data[mobile]:
+            if rss_feed not in texted_data[mobile]:
                 texted_data[mobile][rss_feed] = []
 
 
