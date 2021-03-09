@@ -76,7 +76,6 @@ def check_feeds(config_data, texted_data):
 
 
 def clean_posts(posts_to_text):
-
     for post in posts_to_text:
         alert_text = f'Alert: {post["keyword"]}'
         post["short_link"] = url_client.shorten_url(post["link"])
@@ -91,7 +90,7 @@ def clean_posts(posts_to_text):
     return posts_to_text
 
 
-if __name__ == "__main__":
+def main(event=None, context=None):
     # Load config
     config = file_config.read_file_yaml("config.yml")
 
@@ -110,3 +109,7 @@ if __name__ == "__main__":
 
     # Update texted file
     file_texted.write_file_yaml("texted.yml", texted)
+
+
+if __name__ == "__main__":
+    main()
