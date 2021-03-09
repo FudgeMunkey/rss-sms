@@ -4,9 +4,6 @@ import requests
 
 class UrlTinyurl(UrlApi):
 
-    def __init__(self):
-        pass
-
     def shorten_url(self, url):
         TINY_URL_PREFIX = "http://tinyurl.com/api-create.php?url="
 

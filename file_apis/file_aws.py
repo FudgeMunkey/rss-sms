@@ -12,11 +12,11 @@ aws_region_name = os.getenv("aws_region_name")
 
 
 class FileAws(FileApi):
-
+    client = None
     bucket_name = "s3-rss-sms"
 
     def __init__(self):
-        super().__init__()
+        self.client = self.create_client()
 
     def read_file_yaml(self, file_path):
         try:
@@ -33,9 +33,8 @@ class FileAws(FileApi):
         except ClientError as e:
             # File doesn't exist
             print(f"Error: Unable to load file\n{e}")
-            file_data = {}
 
-        return file_data
+        return file_data if file_data else {}
 
     def write_file_yaml(self, file_path, data):
         # TODO: Error handling
@@ -53,7 +52,7 @@ class FileAws(FileApi):
             print(f"Error: Failed to update texted file\n{e}")
 
     def create_client(self):
-        self.client = boto3.client(
+        aws_client = boto3.client(
             's3',
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
@@ -63,12 +62,12 @@ class FileAws(FileApi):
         # Create the bucket if it doesn't exist
         # TODO: There's probably a better way to check this
         bucket_exists = any(
-            [b["Name"] == self.bucket_name for b in self.client.list_buckets()["Buckets"]]
+            [b["Name"] == self.bucket_name for b in aws_client.list_buckets()["Buckets"]]
         )
 
         if not bucket_exists:
             try:
-                self.client.create_bucket(
+                aws_client.create_bucket(
                     Bucket=self.bucket_name,
                     CreateBucketConfiguration={
                         "LocationConstraint": aws_region_name,
@@ -77,4 +76,4 @@ class FileAws(FileApi):
             except ClientError as e:
                 print(f"Error: Couldn't create bucket\n{e}")
 
-
+        return aws_client

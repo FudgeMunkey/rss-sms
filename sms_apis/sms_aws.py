@@ -11,13 +11,14 @@ aws_region_name = os.getenv("aws_region_name")
 
 
 class SmsAws(SmsApi):
+    client = None
 
     def __init__(self):
-        super().__init__()
+        self.client = self.create_client()
 
     def send_sms(self, sms_data):
         try:
-            res = self.client.publish(
+            self.client.publish(
                 PhoneNumber=sms_data["mobile"],
                 Message=sms_data["message"],
                 Subject="RSS SMS"
@@ -33,9 +34,11 @@ class SmsAws(SmsApi):
         return result
 
     def create_client(self):
-        self.client = boto3.client(
+        sms_client = boto3.client(
             "sns",
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
             region_name=aws_region_name
         )
+
+        return sms_client
