@@ -3,3 +3,4 @@ venv/*
 .env
 config.yml
 texted.yml
+*__pycache__
