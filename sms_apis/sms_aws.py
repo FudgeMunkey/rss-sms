@@ -8,6 +8,7 @@ load_dotenv()
 aws_access_key_id = os.getenv("aws_access_key_id")
 aws_secret_access_key = os.getenv("aws_secret_access_key")
 aws_region_name = os.getenv("aws_region_name")
+montly_spend_limit = os.getenv("MONTHLY_SPEND_LIMIT")
 
 
 class SmsAws(SmsApi):
@@ -39,6 +40,14 @@ class SmsAws(SmsApi):
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
             region_name=aws_region_name
+        )
+
+        sms_client.set_sms_attributes(
+            attributes={
+                "MonthlySpendLimit": montly_spend_limit,
+                "DefaultSenderID": "RSSSMS",
+                "DefaultSMSType": "Transactional"
+            }
         )
 
         return sms_client

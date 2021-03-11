@@ -90,7 +90,7 @@ def clean_posts(posts_to_text):
     return posts_to_text
 
 
-def main(event=None, context=None):
+def main():
     # Load config
     config = file_config.read_file_yaml("config.yml")
 
@@ -109,6 +109,16 @@ def main(event=None, context=None):
 
     # Update texted file
     file_texted.write_file_yaml("texted.yml", texted)
+
+
+# Amazon Lambda Handler
+def lambda_handler(event=None, context=None):
+    main()
+
+    return {
+        'statuscode': 200,
+        'body': 'success'
+    }
 
 
 if __name__ == "__main__":

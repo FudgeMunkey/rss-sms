@@ -4,3 +4,5 @@ venv/*
 config.yml
 texted.yml
 *__pycache__
+dist/*
+build/*
