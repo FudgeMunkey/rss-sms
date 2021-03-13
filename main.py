@@ -57,6 +57,8 @@ def check_feeds(config_data, texted_data):
                 keywords = config_data[mobile][rss_url]
 
                 for keyword in keywords:
+                    keyword = str(keyword)
+
                     stripped_post = {
                         "title": post["title"],
                         "summary": post["summary"],
