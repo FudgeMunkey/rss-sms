@@ -15,7 +15,10 @@ file_texted = FileAws()
 url_client = UrlTinyurl()
 
 load_dotenv()
-MAX_SMS_LENGTH = int(os.getenv("MAX_SMS_LENGTH"))
+MAX_SMS_LENGTH = int(os.getenv("max_sms_length"))
+
+if not MAX_SMS_LENGTH:
+    raise Exception("Missing max_sms_length from the environment.")
 
 
 def stub_texted(config_data, texted_data):

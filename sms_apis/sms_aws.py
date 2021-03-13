@@ -5,10 +5,22 @@ from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 
 load_dotenv()
-aws_access_key_id = os.getenv("aws_access_key_id")
-aws_secret_access_key = os.getenv("aws_secret_access_key")
-aws_region_name = os.getenv("aws_region_name")
-montly_spend_limit = os.getenv("MONTHLY_SPEND_LIMIT")
+AWS_ACCESS_KEY_ID = os.getenv("aws_access_key_id")
+AWS_SECRET_ACCESS_KEY = os.getenv("aws_secret_access_key")
+AWS_REGION_NAME = os.getenv("aws_region_name")
+MONTHLY_SPEND_LIMIT = os.getenv("monthly_spend_limit")
+
+if not AWS_ACCESS_KEY_ID:
+    raise Exception("Missing aws_access_key_id from the environment.")
+
+if not AWS_SECRET_ACCESS_KEY:
+    raise Exception("Missing aws_secret_access_key from the environment.")
+
+if not AWS_REGION_NAME:
+    raise Exception("Missing aws_region_name from the environment.")
+
+if not MONTHLY_SPEND_LIMIT:
+    raise Exception("Missing monthly_spend_limit from the environment.")
 
 
 class SmsAws(SmsApi):
@@ -37,14 +49,14 @@ class SmsAws(SmsApi):
     def create_client(self):
         sms_client = boto3.client(
             "sns",
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
-            region_name=aws_region_name
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+            region_name=AWS_REGION_NAME
         )
 
         sms_client.set_sms_attributes(
             attributes={
-                "MonthlySpendLimit": montly_spend_limit,
+                "MonthlySpendLimit": MONTHLY_SPEND_LIMIT,
                 "DefaultSenderID": "RSSSMS",
                 "DefaultSMSType": "Transactional"
             }
