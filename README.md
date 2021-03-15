@@ -4,10 +4,11 @@
 
 This readme will walk you through how to set up this script on your own hardware or using a variety of Amazon's services. If you have access to a free SMS API such as [Pushbullet](https://www.pushbullet.com/) or Telstra*, then you can run this script entirely for free.
 
-*****In the past, Telstra has offered 1,000 free SMS messages per month for its customers using their API, however I am unsure if this was the result of a promotion or just normal usage.  
+*In the past, Telstra has offered 1,000 free SMS messages per month for its customers using their API, however I am unsure if this was the result of multiple promotions or just their normal policy.
 
 # Table of Contents
 
+- [Quick Start Guide](#quick-start-guide)
 - [Set Up](#set-up)
 - [Deployment](#deployment)
   - [Local](#local)
@@ -19,9 +20,16 @@ This readme will walk you through how to set up this script on your own hardware
   - [URL Shortening](#url-shortening)
 - [Limitations](#limitations)
 
+# Quick Start Guide
+
+To be written..
+
+- Run locally
+- Twilio SMS API
+
 # Set Up
 
-To get **RSS SMS** working you will need to [deploy it](#Deployment) and set up the chosen [APIs](#APIs). I strongly suggest that you set up and run RSS SMS locally to ensure that you can get it working before deploying it elsewhere. This will help to save you some sanity. 
+To get **RSS SMS** working you will need to [deploy it](#Deployment) and set up the chosen [APIs](#APIs). I strongly suggest that you set up and run **RSS SMS** locally to ensure that you can get it working before deploying it elsewhere. This will help to save you some sanity. 
 
 The *config.yml* file is used to specify the RSS feeds and keywords that each mobile number is subscribed to. You can specify multiple mobile numbers, multiple RSS feeds for each number, and multiple keywords for each RSS feed. Most SMS APIs require you to use the [E.164](https://en.wikipedia.org/wiki/E.164) international telephone numbering plan. An example *config.yml* file is shown below.
 
@@ -42,7 +50,7 @@ The *config.yml* file is used to specify the RSS feeds and keywords that each mo
   ...
 ```
 
-You will also need to set up a *.env* file or otherwise set up environment variables. The required variables will depend on the chosen APIs and will be described in [APIs](#apis).  
+You will also need to set up a *.env* file or environment. The required variables will depend on the chosen APIs and will be described in [APIs](#apis).  
 
 # Deployment
 
@@ -81,7 +89,7 @@ You will need to run **RSS SMS** constantly throughout the day so it can always 
 
 [AWS Lambda](https://aws.amazon.com/lambda/) provides you with a free and easy way to run **RSS SMS**. The online web console makes it easy to edit your *config.yml* file as needed. You have up to 1 million requests and 400,000 GB-seconds of computer time per month for free*. This is more than enough to run **RSS SMS** every 10 minutes or more.
 
-To get started, you will need to create an IAM user as described [here](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html#id_users_create_console). Make sure you add the `AWS_ACCESS_KEY_ID` and ` AWS_SECRET_ACCESS_KEY` variables to your *.env* file as these are required to use the AWS API as your user. Since AWS Lambda is stateless, you must use the [AWS S3 file management API](#aws-s3) or similar to manage the *texted.yml* file. The *config.yml* file however, may be managed using the [local file management API](#local-1). If you are using AWS Lambda and you do not have access to a free SMS API, I recommend that you use the AWS SNS service and double down on the Amazon ecosystem.
+To get started, you will need to create an IAM user as described [here](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html#id_users_create_console). Make sure you add the `AWS_ACCESS_KEY_ID` and ` AWS_SECRET_ACCESS_KEY` variables to your *.env* file or environment as these are required to use the AWS API as your user. Since AWS Lambda is stateless, you must use the [AWS S3 file management API](#aws-s3) or similar to manage the *texted.yml* file. The *config.yml* file however, may be managed using the [local file management API](#local-1). If you are using AWS Lambda and you do not have access to a free SMS API, I recommend that you use the AWS SNS service and double down on the Amazon ecosystem.
 
 You will need to read the [APIs](#apis) section to set up each of the APIs. The top of the *main.py* file should look as follows.
 
@@ -97,7 +105,7 @@ file_config = FileLocal()
 file_texted = FileAws()
 ```
 
-*****As of 14/03/2021
+*As of 14/03/2021
 
 ### Lambda Function
 
@@ -158,7 +166,7 @@ You need to change the function timeout limit as the default 3 seconds is not lo
 1. Edit the 'rss-sms' Lambda function
 2. In the 'Configuration' tab, select 'General configuration'
 3. Click 'Edit'
-4. Change the Timeout value to be 1 minute and 0 seconds
+4. Change the Timeout value to be 3 minutes and 0 seconds
 5. Click 'Save'
 
 You need to configure the environment variables used by **RSS SMS**. Complete the following steps.
@@ -171,7 +179,7 @@ You need to configure the environment variables used by **RSS SMS**. Complete th
 
 ### Scheduling
 
-You can now run RSS SMS by clicking 'Test', creating a test using the default values and running it. You should receive a text to your mobile if any of the RSS feeds contained any of the keywords from the *config.yml* file. However, you still need to schedule **RSS SMS** to run constantly. Complete the following steps.
+You can now run **RSS SMS** by clicking 'Test', creating a test using the default values and running it. You should receive a text to your mobile if any of the RSS feeds contained any of the keywords from the *config.yml* file. However, you still need to schedule **RSS SMS** to run constantly. Complete the following steps.
 
 1. Navigate to the [AWS CloudWatch console](https://console.aws.amazon.com/cloudwatch/)
 2. Select 'Event' > 'Rules' in the navigation pane
@@ -186,11 +194,11 @@ You can now run RSS SMS by clicking 'Test', creating a test using the default va
    1. Name: rss-sms-scheduler
 8. Click 'Create rule'
 
-**RSS SMS** should run immediately and then again in around 10 minutes. Change the *config.yml* file to verify that RSS SMS is sending texts correctly and on time.
+**RSS SMS** should run immediately and then again every 10 minutes. Change the *config.yml* file to trigger on a recent post and run a test to verify that **RSS SMS** is sending texts correctly and on time.
 
 ### Updating config.yml
 
-To change your subscriptions, you just need to edit the *config.yml* file and click 'Deploy' to save your changes. 
+To change your subscriptions, you just need to edit the *config.yml* file and click 'Deploy' to save your changes. You can verify that your changes have worked by running a test.
 
 # APIs
 
@@ -198,14 +206,28 @@ To change your subscriptions, you just need to edit the *config.yml* file and cl
 
 ### AWS Simple Notification Service (SNS)
 
-TODO
+You need to give the appropriate permissions to the AWS user you created earlier. Complete the following steps.
 
-- User permissions
-- To get started, you will need to create an IAM user as described [here](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html#id_users_create_console). Make sure you add the `AWS_ACCESS_KEY_ID` and ` AWS_SECRET_ACCESS_KEY` variables to your *.env* file as these are required to use the AWS API as your user.
+1. Navigate to the [AWS IAM console](https://console.aws.amazon.com/iam/home#/users)
+2. Click on the user you created earlier to edit them
+3. Add the following permissions to the user account
+   1. `AmazonSNSFullAccess`
+
+Add the following keys to your environment.
+
+- `aws_region_name_sms`
+  - You can find a list of SMS supported regions and their costs in this article [this article](https://docs.aws.amazon.com/sns/latest/dg/sns-supported-regions-countries.html).
+- `monthly_spend_limit`
+  - The maximum amount you want to spend each month on SMS. This may take up to an hour to update.
+  - **Note**: By default, AWS limits your SMS quota to $1/month. If you wish to increase this limit, please follow the steps in [this article](https://docs.aws.amazon.com/sns/latest/dg/channels-sms-awssupport-spend-threshold.html). 
+
+By default, the AWS SMS API uses the `Transactional` SMS type which ensures that the message is delivered over routes with the highest delivery reliability. This message type typically costs more than the `Promotional` SMS type, however in Australia these costs are the same*. 
+
+*As of 14/03/2021
 
 ### Pushbullet
 
-[Pushbullet](https://www.pushbullet.com/) is not currently supported although I'm planning to add support in the future as you can send up to 100 free SMS messages* per month.
+[Pushbullet](https://www.pushbullet.com/) is not currently supported although I'm planning to add support in the future as you can send up to 100* free SMS messages per month.
 
 *As of 14/03/2021
 
@@ -221,10 +243,19 @@ Nothing needs to be configured for the local file management API.
 
 ### AWS S3
 
-TODO
+You need to give the appropriate permissions to the AWS user you created earlier. Complete the following steps.
 
-- User permissions
-- To get started, you will need to create an IAM user as described [here](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html#id_users_create_console). Make sure you add the `AWS_ACCESS_KEY_ID` and ` AWS_SECRET_ACCESS_KEY` variables to your *.env* file as these are required to use the AWS API as your user.
+1. Navigate to the [AWS S3 console](https://console.aws.amazon.com/s3/)
+2. Click on the user you created earlier to edit them
+3. Add the following permissions to the user account
+   1. `AmazonS3FullAccess `
+
+Add the following keys to your environment.
+
+- `aws_region_name_file_management`
+  - You can find a list of S3 supported regions and their costs in [this article](https://docs.aws.amazon.com/general/latest/gr/s3.html).
+- `bucket_name`
+  - The bucket used to store the already texted RSS posts is automatically created if it doesn't already exist.
 
 ## URL Shortening
 
@@ -237,8 +268,8 @@ Nothing needs to be done to configure the [TinyURL](https://tinyurl.com/app) API
 Below are a list of known limitations for **RSS SMS**. 
 
 - The only way to be notified of posts is via SMS. Receiving notifications via email for RSS feeds and keywords you care less about is a planned future feature.
-- The way keywords are defined is not flexible and means you have to match the words from the post exactly. This can be a problem when trying to match multiple words or a phrase.
+- The way keywords are defined is not flexible and means you have to match the words from the post exactly. This can be a problem when trying to match multiple words or a phrase in a post.
 
 # Contributions
 
-If you would like to contribute a new API service, please create a merge request with a clear description of what the new API is and how to set it up and use it. 
+If you would like to contribute a new API service, please create a merge request with a clear description of what the new API is, how to set it up, and how to use it. 

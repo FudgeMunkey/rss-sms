@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 AWS_ACCESS_KEY_ID = os.getenv("aws_access_key_id")
 AWS_SECRET_ACCESS_KEY = os.getenv("aws_secret_access_key")
-AWS_REGION_NAME = os.getenv("aws_region_name")
+AWS_REGION_NAME = os.getenv("aws_region_name_sms")
 MONTHLY_SPEND_LIMIT = os.getenv("monthly_spend_limit")
 
 if not AWS_ACCESS_KEY_ID:
