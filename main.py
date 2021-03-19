@@ -1,6 +1,7 @@
 import feedparser
 from dotenv import load_dotenv
 import os
+import re
 
 # Import APIs
 from sms_apis.sms_aws import SmsAws
@@ -43,6 +44,11 @@ def text_posts(posts_to_text, texted_data):
             texted_data[post["mobile"]][post["rss_url"]].append(post["link"])
 
 
+def search_for_keyword(search_keyword, post_contents, post_link, prev_texted):
+    regex_results = re.search(search_keyword.lower(), post_contents.lower())
+    return regex_results and post_link not in prev_texted
+
+
 def check_feeds(config_data, texted_data):
     posts_to_text = []
 
@@ -52,12 +58,16 @@ def check_feeds(config_data, texted_data):
         for rss_url in rss_urls:
             # Load the rss_feed
             rss_feed = feedparser.parse(rss_url)
+            previously_texted = texted_data[mobile][rss_url]
 
             for post in rss_feed.entries:
                 keywords = config_data[mobile][rss_url]
+                post_content = post["title"] + post["summary"]
+                found_match = False
 
                 for keyword in keywords:
-                    keyword = str(keyword)
+                    if found_match:
+                        break
 
                     stripped_post = {
                         "title": post["title"],
@@ -65,17 +75,25 @@ def check_feeds(config_data, texted_data):
                         "link": post["link"],
                         "mobile": mobile,
                         "rss_url": rss_url,
-                        "keyword": keyword,
+                        "keyword": str(keyword),
                     }
 
-                    keyword = keyword.lower()
+                    # Check if the keyword is a list of keywords
+                    if type(keyword) is dict:
+                        dict_key = list(keyword.keys())[0]
+                        stripped_post["keyword"] = dict_key
 
-                    # Check if keyword is in the post, but not already texted
-                    if (keyword in stripped_post["title"].lower() or
-                        keyword in stripped_post["summary"].lower()) and \
-                            stripped_post["link"] not in texted_data[mobile][rss_url]:
-                        posts_to_text.append(stripped_post)
-                        break
+                        for k in keyword[dict_key]:
+                            # Check if keyword is in the post, but not already texted
+                            if search_for_keyword(k, post_content, stripped_post["link"], previously_texted):
+                                posts_to_text.append(stripped_post)
+                                found_match = True
+                                break
+                    else:
+                        # Check if keyword is in the post, but not already texted
+                        if search_for_keyword(keyword, post_content, stripped_post["link"], previously_texted):
+                            posts_to_text.append(stripped_post)
+                            found_match = True
 
     return posts_to_text
 
