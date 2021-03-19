@@ -82,15 +82,17 @@ def check_feeds(config_data, texted_data):
 
 def clean_posts(posts_to_text):
     for post in posts_to_text:
-        alert_text = f'Alert: {post["keyword"]}'
+        alert_text = f'Alert: {post["keyword"]}\n'
         post["short_link"] = url_client.shorten_url(post["link"])
-        title_chars = MAX_SMS_LENGTH - len(alert_text) - len(post["short_link"]) - 2
+        title_chars = MAX_SMS_LENGTH - len(alert_text) - len(post["short_link"]) - 1
 
-        if title_chars != len(post["title"]):
+        if title_chars < len(post["title"]):
             # Title section was shortened
-            post["title"] = post["title"][:title_chars - 3] + "..."
+            post["title"] = post["title"][:title_chars - 3] + "...\n"
+        else:
+            post["title"] += '\n'
 
-        post["message"] = f'{alert_text}\n{post["title"]}\n{post["short_link"]}'
+        post["message"] = f'{alert_text}{post["title"]}{post["short_link"]}'
 
     return posts_to_text
 
