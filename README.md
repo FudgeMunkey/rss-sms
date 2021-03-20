@@ -22,16 +22,31 @@ This readme will walk you through how to set up this script on your own hardware
 
 # Quick Start Guide
 
+This quick start guide has not yet been written but is on the todo list. Please see [Set Up](#set-up) for a more in-depth walkthrough of how to deploy **RSS SMS**.
+
+## Locally
+
 To be written..
 
 - Run locally
 - Twilio SMS API
 
+## Amazon
+
+To be written..
+
+- Deploy to AWS Lambda to run the script
+- Set up AWS SNS to send SMS
+- Set up AWS S3 to store data
+- Set up AWS Cloudwatch to schedule the executions
+
 # Set Up
 
 To get **RSS SMS** working you will need to [deploy it](#Deployment) and set up the chosen [APIs](#APIs). I strongly suggest that you set up and run **RSS SMS** locally to ensure that you can get it working before deploying it elsewhere. This will help to save you some sanity. 
 
-The *config.yml* file is used to specify the RSS feeds and keywords that each mobile number is subscribed to. You can specify multiple mobile numbers, multiple RSS feeds for each number, and multiple keywords for each RSS feed. Most SMS APIs require you to use the [E.164](https://en.wikipedia.org/wiki/E.164) international telephone numbering plan. An example *config.yml* file is shown below.
+The *config.yml* file is used to specify the RSS feeds and keywords that each mobile number is subscribed to. You can specify multiple mobile numbers, multiple RSS feeds for each number, and multiple keywords (regex is supported) for each RSS feed. Most SMS APIs require you to use the [E.164](https://en.wikipedia.org/wiki/E.164) international telephone numbering plan. 
+
+The keywords are case insensitive and can be grouped together so the texts you receive are more readable. For example, in the _config.yml_ file shown below if the keyword `Hershey(|')s` is triggered, then the SMS would show "Alert: Chocolates" instead of "Alert: Hershey(|')s".
 
 ```yaml
 # Configuration file config.yml
@@ -41,13 +56,18 @@ The *config.yml* file is used to specify the RSS feeds and keywords that each mo
   https://www.ozbargain.com.au/deals/feed:
     - 3900x
     - Mecca
-    - Ferrero Rocher
+    - Chocolates:
+      - Ferrero Rocher
+      - Cadbury (Dairy Milk|Marvelous Creations|Favourites)
+      - Hershey(|')s
+    - All knives:
+      - kni(f|v)e
   http://www.hellointernet.fm/podcast?format=rss:
   	- "#137"
 
-# United States Number
+# United States number
 '+14XXXXXXXX':
-  ...
+  - ...
 ```
 
 You will also need to set up a *.env* file or environment. The required variables will depend on the chosen APIs and will be described in [APIs](#apis).  
@@ -63,7 +83,7 @@ You will have to clone the repo and install all of the dependencies. I recommend
 ```bash
 git clone <URL>
 cd rss-sms
-python3 -m venv .
+python3 -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
 ```
@@ -268,7 +288,7 @@ Nothing needs to be done to configure the [TinyURL](https://tinyurl.com/app) API
 Below are a list of known limitations for **RSS SMS**. 
 
 - The only way to be notified of posts is via SMS. Receiving notifications via email for RSS feeds and keywords you care less about is a planned future feature.
-- The way keywords are defined is not flexible and means you have to match the words from the post exactly. This can be a problem when trying to match multiple words or a phrase in a post.
+- You aren't able to easily subscribe multiple mobile numbers to the same set of RSS feeds and keywords.
 
 # Contributions
 

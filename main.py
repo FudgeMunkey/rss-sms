@@ -1,6 +1,8 @@
 import feedparser
 from dotenv import load_dotenv
 import os
+import re
+from rss_feed_manager import RssFeedManager
 
 # Import APIs
 from sms_apis.sms_aws import SmsAws
@@ -43,7 +45,13 @@ def text_posts(posts_to_text, texted_data):
             texted_data[post["mobile"]][post["rss_url"]].append(post["link"])
 
 
+def search_for_keyword(search_keyword, post_contents, post_link, prev_texted):
+    regex_results = re.search(str(search_keyword).lower(), post_contents.lower())
+    return regex_results and post_link not in prev_texted
+
+
 def check_feeds(config_data, texted_data):
+    rfm = RssFeedManager()
     posts_to_text = []
 
     for mobile in config_data:
@@ -51,13 +59,17 @@ def check_feeds(config_data, texted_data):
 
         for rss_url in rss_urls:
             # Load the rss_feed
-            rss_feed = feedparser.parse(rss_url)
+            rss_feed = rfm.get_feed(rss_url)
+            previously_texted = texted_data[mobile][rss_url]
 
             for post in rss_feed.entries:
                 keywords = config_data[mobile][rss_url]
+                post_content = post["title"] + post["summary"]
+                found_match = False
 
                 for keyword in keywords:
-                    keyword = str(keyword)
+                    if found_match:
+                        break
 
                     stripped_post = {
                         "title": post["title"],
@@ -65,32 +77,42 @@ def check_feeds(config_data, texted_data):
                         "link": post["link"],
                         "mobile": mobile,
                         "rss_url": rss_url,
-                        "keyword": keyword,
+                        "keyword": str(keyword),
                     }
 
-                    keyword = keyword.lower()
+                    # Check if the keyword is a list of keywords
+                    if type(keyword) is dict:
+                        dict_key = list(keyword.keys())[0]
+                        stripped_post["keyword"] = dict_key
 
-                    # Check if keyword is in the post, but not already texted
-                    if (keyword in stripped_post["title"].lower() or
-                        keyword in stripped_post["summary"].lower()) and \
-                            stripped_post["link"] not in texted_data[mobile][rss_url]:
-                        posts_to_text.append(stripped_post)
-                        break
+                        for k in keyword[dict_key]:
+                            # Check if keyword is in the post, but not already texted
+                            if search_for_keyword(k, post_content, stripped_post["link"], previously_texted):
+                                posts_to_text.append(stripped_post)
+                                found_match = True
+                                break
+                    else:
+                        # Check if keyword is in the post, but not already texted
+                        if search_for_keyword(keyword, post_content, stripped_post["link"], previously_texted):
+                            posts_to_text.append(stripped_post)
+                            found_match = True
 
     return posts_to_text
 
 
 def clean_posts(posts_to_text):
     for post in posts_to_text:
-        alert_text = f'Alert: {post["keyword"]}'
+        alert_text = f'Alert: {post["keyword"]}\n'
         post["short_link"] = url_client.shorten_url(post["link"])
-        title_chars = MAX_SMS_LENGTH - len(alert_text) - len(post["short_link"]) - 2
+        title_chars = MAX_SMS_LENGTH - len(alert_text) - len(post["short_link"]) - 1
 
-        if title_chars != len(post["title"]):
+        if title_chars < len(post["title"]):
             # Title section was shortened
-            post["title"] = post["title"][:title_chars - 3] + "..."
+            post["title"] = post["title"][:title_chars - 3] + "...\n"
+        else:
+            post["title"] += '\n'
 
-        post["message"] = f'{alert_text}\n{post["title"]}\n{post["short_link"]}'
+        post["message"] = f'{alert_text}{post["title"]}{post["short_link"]}'
 
     return posts_to_text
 
