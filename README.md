@@ -63,7 +63,7 @@ You will have to clone the repo and install all of the dependencies. I recommend
 ```bash
 git clone <URL>
 cd rss-sms
-python3 -m venv .
+python3 -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
 ```
@@ -268,7 +268,6 @@ Nothing needs to be done to configure the [TinyURL](https://tinyurl.com/app) API
 Below are a list of known limitations for **RSS SMS**. 
 
 - The only way to be notified of posts is via SMS. Receiving notifications via email for RSS feeds and keywords you care less about is a planned future feature.
-- The way keywords are defined is not flexible and means you have to match the words from the post exactly. This can be a problem when trying to match multiple words or a phrase in a post.
 
 # Contributions
 

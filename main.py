@@ -2,6 +2,7 @@ import feedparser
 from dotenv import load_dotenv
 import os
 import re
+from rss_feed_manager import RssFeedManager
 
 # Import APIs
 from sms_apis.sms_aws import SmsAws
@@ -45,11 +46,12 @@ def text_posts(posts_to_text, texted_data):
 
 
 def search_for_keyword(search_keyword, post_contents, post_link, prev_texted):
-    regex_results = re.search(search_keyword.lower(), post_contents.lower())
+    regex_results = re.search(str(search_keyword).lower(), post_contents.lower())
     return regex_results and post_link not in prev_texted
 
 
 def check_feeds(config_data, texted_data):
+    rfm = RssFeedManager()
     posts_to_text = []
 
     for mobile in config_data:
@@ -57,7 +59,7 @@ def check_feeds(config_data, texted_data):
 
         for rss_url in rss_urls:
             # Load the rss_feed
-            rss_feed = feedparser.parse(rss_url)
+            rss_feed = rfm.get_feed(rss_url)
             previously_texted = texted_data[mobile][rss_url]
 
             for post in rss_feed.entries:
